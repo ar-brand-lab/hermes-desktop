@@ -1,0 +1,108 @@
+name: macOS OAuth Buffer Probe
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: macos-latest
+    steps:
+      - name: Run subprocess buffering probe
+        shell: bash
+        run: |
+          cat > /tmp/oauth-buffer-probe.js <<'JS'
+          const { spawn } = require("child_process");
+          const fs = require("fs");
+
+          function probe(label, args, env = {}) {
+            return new Promise((resolve) => {
+              const child = spawn("python3", args, {
+                env,
+                stdio: ["ignore", "pipe", "pipe"],
+              });
+              let stdout = "";
+              let stderr = "";
+              child.stdout.on("data", (chunk) => {
+                stdout += chunk.toString();
+              });
+              child.stderr.on("data", (chunk) => {
+                stderr += chunk.toString();
+              });
+              setTimeout(() => {
+                const result = {
+                  label,
+                  aliveAfter3s: child.exitCode === null,
+                  stdoutBytesAfter3s: Buffer.byteLength(stdout),
+                  stderrBytesAfter3s: Buffer.byteLength(stderr),
+                  stdoutAfter3s: stdout,
+                  stderrAfter3s: stderr,
+                };
+                child.kill("SIGTERM");
+                setTimeout(() => resolve(result), 500);
+              }, 3000);
+            });
+          }
+
+          const code = [
+            "import time",
+            "print('To continue, follow these steps:')",
+            "print('')",
+            "print('  1. Open this URL in your browser:')",
+            "print('     https://auth.openai.com/codex/device')",
+            "print('')",
+            "print('  2. Enter this code:')",
+            "print('     TEST-CODE')",
+            "print('')",
+            "print('Waiting for sign-in... (press Ctrl+C to cancel)')",
+            "time.sleep(60)",
+          ].join("\n");
+
+          (async () => {
+            const cleanEnv = {
+              PATH: process.env.PATH,
+              HOME: process.env.HOME || "/tmp",
+            };
+            const results = [
+              await probe("normal python3, clean env, stdout is a pipe", ["-c", code], {
+                ...cleanEnv,
+              }),
+              await probe("python3 -u, clean env, stdout is a pipe", ["-u", "-c", code], {
+                ...cleanEnv,
+              }),
+              await probe("PYTHONUNBUFFERED=1, clean env, stdout is a pipe", ["-c", code], {
+                ...cleanEnv,
+                PYTHONUNBUFFERED: "1",
+              }),
+            ];
+            fs.writeFileSync("macos-oauth-buffer-probe.json", JSON.stringify(results, null, 2));
+            console.log(JSON.stringify(results, null, 2));
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          JS
+
+          node /tmp/oauth-buffer-probe.js
+
+      - name: Write summary
+        shell: bash
+        run: |
+          node <<'JS' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require("fs");
+          const rows = JSON.parse(fs.readFileSync("macos-oauth-buffer-probe.json", "utf8"));
+          console.log("## macOS OAuth subprocess buffering probe");
+          console.log("");
+          console.log("| Case | Alive after 3s | stdout bytes after 3s |");
+          console.log("| --- | ---: | ---: |");
+          for (const row of rows) {
+            console.log(`| ${row.label} | ${row.aliveAfter3s} | ${row.stdoutBytesAfter3s} |`);
+          }
+          JS
+
+      - name: Upload probe result
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-oauth-buffer-probe
+          path: macos-oauth-buffer-probe.json
