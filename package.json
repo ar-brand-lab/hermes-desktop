@@ -1,10 +1,10 @@
 {
-  "name": "hermes-desktop",
+  "name": "yama-hermes-one",
   "version": "0.6.2",
   "description": "Hermes Agent Desktop — self-improving AI assistant",
   "main": "./out/main/index.js",
-  "author": "fathah",
-  "homepage": "https://github.com/fathah/hermes-desktop",
+  "author": "ar-brand-lab",
+  "homepage": "https://github.com/ar-brand-lab/hermes-desktop",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -43,7 +43,6 @@
     "highlight.js": "^11.11.1",
     "i18next": "^25.6.0",
     "lucide-react": "^1.7.0",
-    "posthog-js": "^1.376.0",
     "react-file-icon": "^1.6.0",
     "react-hot-toast": "^2.6.0",
     "react-i18next": "^15.7.3",
