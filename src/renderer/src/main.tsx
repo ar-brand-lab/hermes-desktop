@@ -6,7 +6,7 @@ import App from "./App";
 import { I18nProvider } from "./components/I18nProvider";
 
 const appName = import.meta.env.VITE_HERMES_DESKTOP_APP_NAME?.trim();
-document.title = appName || "Hermes One";
+document.title = appName || "Yama Hermes One";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

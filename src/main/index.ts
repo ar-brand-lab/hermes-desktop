@@ -351,7 +351,10 @@ process.on("unhandledRejection", (reason) => {
   console.error("[MAIN UNHANDLED REJECTION]", reason);
 });
 
-const APP_NAME = process.env.HERMES_DESKTOP_APP_NAME?.trim() || "Hermes One";
+const APP_NAME =
+  process.env.HERMES_DESKTOP_APP_NAME?.trim() || "Yama Hermes One";
+const APP_USER_MODEL_ID =
+  process.env.HERMES_DESKTOP_APP_USER_MODEL_ID?.trim() || "com.yama.hermesone";
 
 let mainWindow: BrowserWindow | null = null;
 // Per-run abort handles, keyed by the renderer-minted runId. Multiple chats
@@ -2782,7 +2785,7 @@ if (process.env.ENABLE_CDP === "1") {
 
 app.whenReady().then(() => {
   app.setName(APP_NAME);
-  electronApp.setAppUserModelId("com.nousresearch.hermes");
+  electronApp.setAppUserModelId(APP_USER_MODEL_ID);
   cleanupTempMediaFiles();
 
   // Allow microphone access for the app's own renderer (voice input). Without
